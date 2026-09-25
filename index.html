@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Lucky Reels — a provably fair 5-reel, 10-line video slot. Demo credits only.">
+  <meta name="theme-color" content="#12051f">
+  <title>Lucky Reels</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="src/ui.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1 class="logo"><span aria-hidden="true">🎰</span> Lucky <em>Reels</em></h1>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="btn-paytable" type="button" aria-label="Paytable and rules" title="Paytable">📜</button>
+        <button class="icon-btn" id="btn-fair" type="button" aria-label="Provably fair" title="Provably fair">🛡️</button>
+        <button class="icon-btn" id="btn-sound" type="button" aria-label="Toggle sound" aria-pressed="true" title="Sound">🔊</button>
+      </div>
+    </header>
+
+    <main class="machine">
+      <div class="bonus-banner" id="bonus-banner" hidden>
+        <span>FREE SPINS</span>
+        <strong id="fs-left">0</strong>
+        <span>left · ×<span id="fs-mult">2</span> wins · bonus total <strong id="fs-total">0.00</strong></span>
+      </div>
+
+      <div class="cabinet">
+        <div class="reels-frame">
+          <div class="reels" id="reels"></div>
+          <svg class="lines-overlay" id="lines-overlay" aria-hidden="true"></svg>
+          <div class="win-splash" id="win-splash" hidden>
+            <div class="win-splash-title" id="win-splash-title">BIG WIN</div>
+            <div class="win-splash-amount" id="win-splash-amount">0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="message" id="message" role="status" aria-live="polite">Good luck! Press SPIN or the space bar.</p>
+
+      <section class="controls" aria-label="Game controls">
+        <div class="meter meter-balance">
+          <span class="meter-label">Balance</span>
+          <span class="meter-value" id="balance">0.00</span>
+        </div>
+
+        <div class="bet-control">
+          <span class="meter-label">Total bet</span>
+          <div class="bet-row">
+            <button class="round-btn" id="bet-down" type="button" aria-label="Decrease bet">−</button>
+            <span class="meter-value" id="bet">0.00</span>
+            <button class="round-btn" id="bet-up" type="button" aria-label="Increase bet">+</button>
+          </div>
+        </div>
+
+        <button class="spin-btn" id="btn-spin" type="button">SPIN</button>
+
+        <div class="meter meter-win">
+          <span class="meter-label">Win</span>
+          <span class="meter-value win-value" id="last-win">0.00</span>
+        </div>
+
+        <div class="toggles">
+          <label class="auto-label">
+            Auto
+            <select id="auto-count" aria-label="Autoplay spins">
+              <option value="0">Off</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" id="turbo"> Turbo</label>
+        </div>
+      </section>
+
+      <p class="disclaimer">Demo credits only · No real money · Theoretical RTP ≈ 95.8%</p>
+    </main>
+  </div>
+
+  <dialog id="dlg-paytable" class="dialog">
+    <form method="dialog" class="dialog-head">
+      <h2>Paytable &amp; Rules</h2>
+      <button class="icon-btn" aria-label="Close">✕</button>
+    </form>
+    <div class="dialog-body">
+      <p class="muted">Line pays are multiples of the <strong>line bet</strong> (total bet ÷ 10) and pay left to right on adjacent reels. Values below update with your current bet.</p>
+      <div class="paytable" id="paytable"></div>
+      <h3>Rules</h3>
+      <ul class="rules">
+        <li><strong>⭐ Wild</strong> substitutes for every symbol except 💎 Scatter. A line pays only its highest win.</li>
+        <li><strong>💎 Scatter</strong> pays anywhere as a multiple of the <strong>total bet</strong>: 3 → ×3, 4 → ×15, 5 → ×100.</li>
+        <li>3 or more Scatters award <strong>10 free spins</strong> at the triggering bet. All free-spin wins are <strong>×2</strong>. Free spins can retrigger (max 100 per bonus).</li>
+        <li>10 fixed paylines, shown below. Wins on different lines are added.</li>
+        <li>Malfunction voids all pays and plays.</li>
+      </ul>
+      <div class="lines-legend" id="lines-legend"></div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-fair" class="dialog">
+    <form method="dialog" class="dialog-head">
+      <h2>Provably Fair</h2>
+      <button class="icon-btn" aria-label="Close">✕</button>
+    </form>
+    <div class="dialog-body">
+      <p class="muted">Each spin's reel stops are <code>HMAC-SHA256(serverSeed, clientSeed:nonce)</code>, split into 32-bit words and scaled onto each reel strip. The server seed hash is published before you play; rotate to reveal the seed and verify any past spin.</p>
+
+      <div class="field">
+        <span class="field-label">Active server seed hash (SHA-256)</span>
+        <code class="mono" id="fair-hash">—</code>
+      </div>
+      <form class="field" id="client-seed-form">
+        <label class="field-label" for="client-seed">Client seed</label>
+        <div class="inline">
+          <input id="client-seed" maxlength="64" autocomplete="off" spellcheck="false" required>
+          <button class="btn" type="submit">Set</button>
+        </div>
+      </form>
+      <div class="field">
+        <span class="field-label">Next nonce</span>
+        <code class="mono" id="fair-nonce">0</code>
+      </div>
+      <button class="btn btn-gold" id="btn-rotate" type="button">Rotate seed &amp; reveal</button>
+
+      <div id="revealed-list" class="revealed"></div>
+
+      <h3>Verify a spin</h3>
+      <form id="verify-form" class="verify">
+        <label>Server seed <input name="serverSeed" required spellcheck="false" autocomplete="off"></label>
+        <label>Server seed hash <input name="serverSeedHash" required spellcheck="false" autocomplete="off"></label>
+        <label>Client seed <input name="clientSeed" required spellcheck="false" autocomplete="off"></label>
+        <label>Nonce <input name="nonce" type="number" min="0" step="1" required></label>
+        <button class="btn" type="submit">Verify</button>
+      </form>
+      <div id="verify-result" class="verify-result" aria-live="polite"></div>
+
+      <h3>Recent spins</h3>
+      <div class="history" id="history"></div>
+    </div>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "lucky-reels-slot",
+  "version": "1.0.0",
+  "description": "Provably fair 5x3 video slot with a pure, testable game engine and RTP simulator.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "test": "node --test",
+    "simulate": "node scripts/simulate.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
